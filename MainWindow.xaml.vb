@@ -4,6 +4,7 @@ Class MainWindow
 
     Private processedText As String
     Private ReadOnly keywords() As String = {"FROM", "WHERE", "ORDER", "ON", "AND"}
+    Private ReadOnly defaultFontSize As Integer = 12
 
     Private Sub FromTextBox_TextChanged(sender As Object, e As TextChangedEventArgs)
         'Cast the event sender to a TextBox
@@ -42,7 +43,7 @@ Class MainWindow
     ''' <param name="word">The keyword after which to insert the new line</param>
     Private Sub LineFeed(ByVal word As String)
         Dim index = processedText.IndexOf(word)
-        processedText = If(index > -1, processedText.Substring(0, index - 1) & vbLf & processedText.Substring(index), processedText)
+        processedText = If(index > -1, processedText.Substring(0, index) & vbLf & processedText.Substring(index), processedText)
     End Sub
 
     ''' <summary>
@@ -70,5 +71,15 @@ Class MainWindow
         'Removal of carriage returns
         processedText = Regex.Replace(processedText, "\\r\\n", "")
 
+        processedText = Regex.Replace(processedText, "\s+\n", "")
+        processedText = Regex.Replace(processedText, "\s+", " ")
+
+    End Sub
+
+    Private Sub FontSizeSlider_ValueChanged(sender As Object, e As RoutedPropertyChangedEventArgs(Of Double)) Handles FontSizeSlider.ValueChanged
+        Dim slider As Slider = CType(sender, Slider)
+
+        FromTextBox.FontSize = defaultFontSize * slider.Value
+        ToTextBox.FontSize = defaultFontSize * slider.Value
     End Sub
 End Class

@@ -48,8 +48,12 @@
   <PropertyGroup>
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Jonathan-Rey-Star-Wars-Vehicles-Death-Star-2nd.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System" />
@@ -131,6 +135,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Jonathan-Rey-Star-Wars-Vehicles-Death-Star-2nd.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\r2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\bb9e.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>
