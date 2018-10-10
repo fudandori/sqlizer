@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SQLizer"
         mc:Ignorable="d"
-        Title="SQLizer" Height="600" Width="800">
+        Title="SQLizer" Height="600" Width="800" Background="#FF133244">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
@@ -15,31 +15,41 @@
             <RowDefinition Height="50px" />
             <RowDefinition/>
         </Grid.RowDefinitions>
-        <!-- <ComboBox>
+
+        <!-- NOT IMPLEMENTED
+        <ComboBox>
             <ComboBoxItem>JAVA to SQL</ComboBoxItem>
             <ComboBoxItem>SQL to JAVA</ComboBoxItem>
         </ComboBox>
         -->
 
-        <Border BorderBrush="Blue" BorderThickness="2" CornerRadius="7" Grid.Row="1" Margin="5">
+        <Border BorderBrush="White" BorderThickness="2" CornerRadius="7" Grid.Row="1" Margin="5">
             <Border.Background>
-                <SolidColorBrush Color="White" Opacity="0.545"/>
+                <SolidColorBrush Color="White"/>
             </Border.Background>
 
             <TextBox x:Name="FromTextBox" BorderBrush="Transparent" BorderThickness="0" TextWrapping="Wrap" AcceptsReturn="True" TextChanged="FromTextBox_TextChanged" CaretBrush="Black">
+                <TextBox.Background>
+                    <ImageBrush ImageSource="Resources/java.png" Stretch="Uniform" Opacity="0.1"/>
+                </TextBox.Background>
                 <TextBox.Foreground>
                     <SolidColorBrush Color="Black"/>
                 </TextBox.Foreground>
-                <TextBox.Background>
-                    <ImageBrush ImageSource="Resources/r2.png" Stretch="Uniform" Opacity="0.1"/>
-                </TextBox.Background>
             </TextBox>
         </Border>
-        <Border BorderBrush="red" BorderThickness="2" CornerRadius="7" Grid.Row="1" Grid.Column="1" Margin="5">
+        <Border BorderBrush="White" BorderThickness="2" CornerRadius="7" Grid.Row="1" Grid.Column="1" Margin="5" Background="White">
             <RichTextBox x:Name="ToTextBox" Margin="2" BorderThickness="0" AcceptsReturn="True" IsReadOnly="True" >
                 <RichTextBox.Background>
-                    <ImageBrush ImageSource="Resources/bb9e.png" Stretch="Uniform" Opacity="0.2"/>
+                    <ImageBrush ImageSource="Resources/sql.png" Stretch="Uniform" Opacity="0.1"/>
                 </RichTextBox.Background>
+                <RichTextBox.Resources>
+                    <Style TargetType="{x:Type Paragraph}">
+                        <Setter Property="Margin" Value="0"/>
+                    </Style>
+                </RichTextBox.Resources>
+                <FlowDocument>
+                    <Paragraph/>
+                </FlowDocument>
             </RichTextBox>
         </Border>
         <Slider x:Name="FontSizeSlider" Grid.ColumnSpan="2" VerticalAlignment="Center" Margin="25 0" Maximum="6" Minimum="1" SmallChange="0.5" Cursor="Hand" TickFrequency="0.01"/>

@@ -49,7 +49,7 @@
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Jonathan-Rey-Star-Wars-Vehicles-Death-Star-2nd.ico</ApplicationIcon>
+    <ApplicationIcon>Iconleak-Cerulean-Database.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Core" />
@@ -137,13 +137,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Jonathan-Rey-Star-Wars-Vehicles-Death-Star-2nd.ico" />
+    <Resource Include="Resources\java.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\r2.png" />
+    <Resource Include="Resources\sql.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\bb9e.png" />
+    <Resource Include="Iconleak-Cerulean-Database.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>
