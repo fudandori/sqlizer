@@ -1,13 +1,17 @@
 # sqlizer
 JAVA ---> SQL text transformer
 
+v1.0 released on October 10th, 2018
+
+Coded in Visual Studio with Visual Basic .NET (VB.NET) and WPF
+
+Download lastest version 
+
 Transforms and beautifies SQL queries as JAVA String code.
 
   - Analyze it in a clearer and cleaner way to (better) understand the query.
   - Easier to find syntax errors in the queries.
   - More convinient for exporting the query into other environments.
-  
-  v1.0 released on October 10th, 2018
   
   [SPANISH]
   
