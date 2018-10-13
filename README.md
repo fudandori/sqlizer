@@ -5,7 +5,7 @@ v1.0 released on October 10th, 2018
 
 Coded in Visual Studio with Visual Basic .NET (VB.NET) and WPF
 
-Download lastest version 
+[Download lastest version ](https://drive.google.com/file/d/1raYZ1Xz1KZKW8U99J-d_mE5Unp89HDub/view?usp=sharing)
 
 Transforms and beautifies SQL queries as JAVA String code.
 
