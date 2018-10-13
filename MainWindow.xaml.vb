@@ -21,13 +21,10 @@ Class MainWindow
         'Start the text processing if there is something written
         If processedText.Length Then
 
-            CleanText()
-
-            'Addition of a new line after key SQL words (defined in the "keywords" field)
+            Clean()
             LineBreak()
+            Paint(Brushes.Blue)
 
-            'Color highlight of SQL keywords
-            Recolor(Brushes.Blue)
         End If
 
         'Write the result
@@ -39,7 +36,7 @@ Class MainWindow
     ''' <summary>
     ''' Cleans the text so it looks like a SQL sentence
     ''' </summary>
-    Private Sub CleanText()
+    Private Sub Clean()
 
         'Removal of carriage returns
         processedText = processedText.Replace(vbCrLf, " ")
@@ -72,20 +69,11 @@ Class MainWindow
 
     End Sub
 
-    Private Sub FontSizeSlider_ValueChanged(sender As Object, e As RoutedPropertyChangedEventArgs(Of Double)) Handles FontSizeSlider.ValueChanged
-
-        Dim slider As Slider = CType(sender, Slider)
-
-        FromTextBox.FontSize = defaultFontSize * slider.Value
-        ToTextBox.FontSize = defaultFontSize * slider.Value
-
-    End Sub
-
     ''' <summary>
     ''' Searchs the processed text for SQL keywords and colors them
     ''' </summary>
     ''' <param name="brush">Brush with the color to be used for recoloring the words</param>
-    Private Sub Recolor(brush As SolidColorBrush)
+    Private Sub Paint(brush As SolidColorBrush)
 
         'Select everything on the processed text textbox and save it in an aux variable (plus a space for the coming logic)
         ToTextBox.SelectAll()
@@ -140,6 +128,10 @@ Class MainWindow
 
     End Sub
 
+    ''' <summary>
+    ''' Builds a regex pattern that includes all the keywords (removes the wildcards)
+    ''' </summary>
+    ''' <returns></returns>
     Private Function KeywordRegexBuilder() As String
 
         Dim pattern As String = "^("
@@ -156,6 +148,9 @@ Class MainWindow
 
     End Function
 
+    ''' <summary>
+    ''' Generates all the necessary line breaks
+    ''' </summary>
     Private Sub LineBreak()
 
         SingleLineFeed()
@@ -163,7 +158,9 @@ Class MainWindow
 
     End Sub
 
-
+    ''' <summary>
+    ''' Generates a line break before the eligible keywords
+    ''' </summary>
     Private Sub SingleLineFeed()
 
         Dim words As List(Of String) = New List(Of String)
@@ -183,6 +180,9 @@ Class MainWindow
         Next
     End Sub
 
+    ''' <summary>
+    ''' Generates a double line break, isolating the keyword in a line, for the eligible keywords
+    ''' </summary>
     Private Sub DoubleLineFeed()
         Dim words As List(Of String) = New List(Of String)
 
@@ -199,5 +199,17 @@ Class MainWindow
             Dim replacement As String = vbCrLf & word & vbCrLf
             processedText = Regex.Replace(processedText, pattern, replacement)
         Next
+    End Sub
+
+    ''' <summary>
+    ''' Slider ValueChanged handler
+    ''' </summary>
+    Private Sub FontSizeSlider_ValueChanged(sender As Object, e As RoutedPropertyChangedEventArgs(Of Double)) Handles FontSizeSlider.ValueChanged
+
+        Dim slider As Slider = CType(sender, Slider)
+
+        FromTextBox.FontSize = defaultFontSize * slider.Value
+        ToTextBox.FontSize = defaultFontSize * slider.Value
+
     End Sub
 End Class
