@@ -3,7 +3,7 @@
 Class MainWindow
 
     Private processedText As String
-    Private ReadOnly keywords() As String = {"FROM", "WHERE", "ORDER", "ON", "AND"}
+    Private ReadOnly keywords() As String = {"SELECT", "FROM", "WHERE", "ORDER", "ON", "AND", "JOIN", "%UNION", "$AS"}
     Private ReadOnly defaultFontSize As Integer = 12
 
     Private Sub FromTextBox_TextChanged(sender As Object, e As TextChangedEventArgs)
@@ -23,28 +23,17 @@ Class MainWindow
 
             CleanText()
 
-            'Conversion of all the text to uppercase
-            processedText = processedText.ToUpper
-
             'Addition of a new line after key SQL words (defined in the "keywords" field)
-            For Each word As String In keywords
-                LineFeed(word)
-            Next
+            LineBreak()
+
+            'Color highlight of SQL keywords
+            Recolor(Brushes.Blue)
         End If
 
         'Write the result
-        ToTextBox.AppendText(processedText)
+        'ToTextBox.AppendText(processedText)
 
-        Recolor()
-    End Sub
 
-    ''' <summary>
-    ''' Adds a carriage return after the specified keyword
-    ''' </summary>
-    ''' <param name="word">The keyword after which to insert the new line</param>
-    Private Sub LineFeed(ByVal word As String)
-        Dim index = processedText.IndexOf(word)
-        processedText = If(index > -1, processedText.Substring(0, index) & vbLf & processedText.Substring(index), processedText)
     End Sub
 
     ''' <summary>
@@ -53,24 +42,24 @@ Class MainWindow
     Private Sub CleanText()
 
         'Removal of carriage returns
-        processedText = processedText.Replace(vbCrLf, "")
+        processedText = processedText.Replace(vbCrLf, " ")
 
-        'Remove everything before first double quotes, if there is anything
+        'Removal of everything before first double quotes, if there is anything
         Dim firstQuotes As Integer = processedText.IndexOf("""") + 1
         processedText = If(firstQuotes > -1, processedText.Remove(0, firstQuotes), processedText)
 
-        'Remove everything after last double quotes, if there's anything
+        'Removal of everything after last double quotes, if there's anything
         Dim lastQuotes As Integer = processedText.LastIndexOf("""")
         processedText = If(lastQuotes > -1, processedText.Remove(lastQuotes), processedText)
 
         'Removal of JAVA concatenation syntax
-        processedText = Regex.Replace(processedText, """[\+\s]*""", "")
+        processedText = Regex.Replace(processedText, """[\+\s]*""", " ")
 
         'Removal of JAVA carriage returns
-        processedText = Regex.Replace(processedText, "\\r\\n", "")
+        processedText = Regex.Replace(processedText, "\\r\\n", " ")
 
         'Removal of spaces with line break
-        processedText = Regex.Replace(processedText, "\s+\n", "")
+        processedText = Regex.Replace(processedText, "\s+\n", " ")
 
         'Trim stacks of spaces into a single space
         processedText = Regex.Replace(processedText, "\s+", " ")
@@ -78,28 +67,42 @@ Class MainWindow
         'Removal of a space at the begining, if there is any
         processedText = Regex.Replace(processedText, "^\s", "")
 
+        'Conversion of all the text to uppercase
+        processedText = processedText.ToUpper
+
     End Sub
 
     Private Sub FontSizeSlider_ValueChanged(sender As Object, e As RoutedPropertyChangedEventArgs(Of Double)) Handles FontSizeSlider.ValueChanged
+
         Dim slider As Slider = CType(sender, Slider)
 
         FromTextBox.FontSize = defaultFontSize * slider.Value
         ToTextBox.FontSize = defaultFontSize * slider.Value
+
     End Sub
 
-    Private Sub Recolor()
+    ''' <summary>
+    ''' Searchs the processed text for SQL keywords and colors them
+    ''' </summary>
+    ''' <param name="brush">Brush with the color to be used for recoloring the words</param>
+    Private Sub Recolor(brush As SolidColorBrush)
+
+        'Select everything on the processed text textbox and save it in an aux variable (plus a space for the coming logic)
         ToTextBox.SelectAll()
-        Dim selection As String = ToTextBox.Selection.Text & " "
+
+        'Reset of the processed text textbox
         ToTextBox.Selection.Text = ""
 
+        Dim pattern As String = KeywordRegexBuilder()
         Dim buffer As String = ""
 
-        For Each c As Char In selection
-            If (c = " "c) Then
-                If Regex.IsMatch(buffer, "SELECT|FROM|WHERE") Then
-                    DyeWord(buffer & c, Brushes.Blue, True)
+        'Adds the chars to a buffer, when it detects a space it means it has stored a word and processes it for recoloring
+        For Each c As Char In processedText & " "
+            If (c = " "c OrElse c = vbLf) Then
+                If Regex.IsMatch(buffer & c, pattern) Then
+                    DyeWord(buffer & c, brush, True)
                 Else
-                    DyeWord(buffer & c, Brushes.Black, False)
+                    Write(buffer & c)
                 End If
                 buffer = ""
             Else
@@ -109,10 +112,92 @@ Class MainWindow
 
     End Sub
 
+    ''' <summary>
+    ''' Concatenates a word to the processed text in a specified color and with bold style, if stated
+    ''' </summary>
+    ''' <param name="word">String with the word to concatenate</param>
+    ''' <param name="brush">Color to be used to dye the word with</param>
+    ''' <param name="bold">Wether the word is bolded or not</param>
     Private Sub DyeWord(word As String, brush As SolidColorBrush, bold As Boolean)
+
         Dim range As TextRange = New TextRange(ToTextBox.Document.ContentEnd, ToTextBox.Document.ContentEnd)
         range.Text = word
         range.ApplyPropertyValue(TextElement.ForegroundProperty, brush)
         range.ApplyPropertyValue(TextElement.FontWeightProperty, If(bold, FontWeights.Bold, FontWeights.Regular))
+
+    End Sub
+
+    ''' <summary>
+    ''' Concatenates a word to the processed text wth regular style
+    ''' </summary>
+    ''' <param name="word">String with the word to concatenate</param>
+    Private Sub Write(word As String)
+
+        Dim range As TextRange = New TextRange(ToTextBox.Document.ContentEnd, ToTextBox.Document.ContentEnd)
+        range.Text = word
+        range.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Black)
+        range.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Regular)
+
+    End Sub
+
+    Private Function KeywordRegexBuilder() As String
+
+        Dim pattern As String = "^("
+
+        For Each keyword As String In keywords
+            pattern &= Regex.Replace(keyword, "\$|%", "") & "|"
+        Next
+
+        pattern = pattern.Remove(pattern.LastIndexOf("|"), 1)
+
+        pattern &= ")\s?\n?$"
+
+        Return pattern
+
+    End Function
+
+    Private Sub LineBreak()
+
+        SingleLineFeed()
+        DoubleLineFeed()
+
+    End Sub
+
+
+    Private Sub SingleLineFeed()
+
+        Dim words As List(Of String) = New List(Of String)
+
+        'Recollection of all the words that require a single line break (no wildcards)
+        For Each keyword As String In keywords
+            If (Not Regex.IsMatch(keyword, "\$|%")) Then
+                words.Add(keyword)
+            End If
+        Next
+
+        'Addition of a line break before the keywords
+        For Each word As String In words
+            Dim pattern As String = "(\s|\n)" & word & "(\s|\n)"
+            Dim replacement As String = vbCrLf & word & " "
+            processedText = Regex.Replace(processedText, pattern, replacement)
+        Next
+    End Sub
+
+    Private Sub DoubleLineFeed()
+        Dim words As List(Of String) = New List(Of String)
+
+        'Recollection of all the words that require a double line break (% wildcard)
+        For Each keyword As String In keywords
+            If (Regex.IsMatch(keyword, "%")) Then
+                words.Add(Regex.Replace(keyword, "%", ""))
+            End If
+        Next
+
+        'Isolation of the keywords in a single line
+        For Each word As String In words
+            Dim pattern As String = "(\s|\n)+" & word & "(\s|\n)+"
+            Dim replacement As String = vbCrLf & word & vbCrLf
+            processedText = Regex.Replace(processedText, pattern, replacement)
+        Next
     End Sub
 End Class
