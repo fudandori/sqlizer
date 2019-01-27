@@ -1,42 +1,51 @@
 ﻿Imports System.Text.RegularExpressions
-
+Imports System.Windows.Threading
 Class MainWindow
 
     Private processedText As String
-    Private ReadOnly keywords() As String = {"SELECT", "FROM", "WHERE", "ORDER", "ON", "AND", "JOIN", "%UNION", "$AS"}
     Private ReadOnly defaultFontSize As Integer = 12
+    Private ReadOnly keywords() As String = {
+        "SELECT", "FROM", "WHERE", "ORDER", "$BY", "ON", "AND", "OR", "JOIN", "%UNION", "%UNION_ALL", "$AS", "ALTER", "$NOT", "$NULL",
+        "$ASC", "$DESC", "VALUES", "$IS", "$UPDATE", "SET", "$ROWNUM",
+        "CREATE", "DROP", "$TABLE", "TRUNCATE", "ADD", "$COLUMN", "$IN"}
 
-    Private Sub FromTextBox_TextChanged(sender As Object, e As TextChangedEventArgs)
-        'Cast the event sender to a TextBox
-        Dim textBox As TextBox = CType(sender, TextBox)
+    Private cooldown As DispatcherTimer = New DispatcherTimer
 
-        'Variable initialization
-        processedText = textBox.Text
-        Dim textLength As Integer = textBox.Text.Length
+    Public Sub New()
+
+        InitializeComponent()
+
+        'Timer setup
+        AddHandler cooldown.Tick, AddressOf dispatcherTimer_Tick
+        cooldown.Interval = New TimeSpan(0, 0, 0, 0, 500)
+
+    End Sub
+
+    Private Sub dispatcherTimer_Tick()
+        cooldown.Stop()
+
+        Clean()
+        LineBreak()
+        Paint(Brushes.Blue, Brushes.Green, Brushes.OrangeRed)
+
+    End Sub
+
+    Private Sub FromTextBox_TextChanged()
+        cooldown.Stop()
 
         'Empty the contents of the results window
         ToTextBox.SelectAll()
         ToTextBox.Selection.Text = ""
 
-        'Start the text processing if there is something written
-        If processedText.Length Then
-
-            Clean()
-            LineBreak()
-            Paint(Brushes.Blue)
-
-        End If
-
-        'Write the result
-        'ToTextBox.AppendText(processedText)
-
-
+        cooldown.Start()
     End Sub
 
     ''' <summary>
     ''' Cleans the text so it looks like a SQL sentence
     ''' </summary>
     Private Sub Clean()
+
+        processedText = FromTextBox.Text
 
         'Removal of carriage returns
         processedText = processedText.Replace(vbCrLf, " ")
@@ -58,22 +67,27 @@ Class MainWindow
         'Removal of spaces with line break
         processedText = Regex.Replace(processedText, "\s+\n", " ")
 
+        'Addition of space after a comma
+        processedText = Regex.Replace(processedText, "\s?,", ", ")
+
         'Trim stacks of spaces into a single space
         processedText = Regex.Replace(processedText, "\s+", " ")
+
+        'Conversion of UNION ALL to UNION_ALL for parsing purposes
+        processedText = Regex.Replace(processedText, "UNION ALL", "UNION_ALL")
 
         'Removal of a space at the begining, if there is any
         processedText = Regex.Replace(processedText, "^\s", "")
 
-        'Conversion of all the text to uppercase
-        processedText = processedText.ToUpper
-
     End Sub
 
     ''' <summary>
-    ''' Searchs the processed text for SQL keywords and colors them
+    ''' Searchs the processed text for SQL keywords and special characters and colors them
     ''' </summary>
-    ''' <param name="brush">Brush with the color to be used for recoloring the words</param>
-    Private Sub Paint(brush As SolidColorBrush)
+    ''' <param name="keywordBrush">Brush with the color to be used for recoloring the words</param>
+    ''' <param name="stringBrush">Normal text brush</param>
+    ''' <param name="operatorBrush">Brush for the operator characters</param>
+    Private Sub Paint(keywordBrush As SolidColorBrush, stringBrush As SolidColorBrush, operatorBrush As SolidColorBrush)
 
         'Select everything on the processed text textbox and save it in an aux variable (plus a space for the coming logic)
         ToTextBox.SelectAll()
@@ -82,23 +96,103 @@ Class MainWindow
         ToTextBox.Selection.Text = ""
 
         Dim pattern As String = KeywordRegexBuilder()
-        Dim buffer As String = ""
 
-        'Adds the chars to a buffer, when it detects a space it means it has stored a word and processes it for recoloring
+        Dim buffer As String = ""
+        Dim lastChar As String = ""
+        Dim bufferingString As Boolean = False
+
+        'Cycle trough the processed text with an space at the end so it stops at the last word
         For Each c As Char In processedText & " "
-            If (c = " "c OrElse c = vbLf) Then
-                If Regex.IsMatch(buffer & c, pattern) Then
-                    DyeWord(buffer & c, brush, True)
+
+            buffer &= c
+
+            'If a space or line break is detected it means it has buffered a whole word.
+            'In case we are buffering a string we ignore this
+            If ((c = " "c OrElse c = vbLf) AndAlso Not bufferingString) Then
+
+                'The word is colored and uppercased if it's a SQL Keyword (from the list), or regular otherwise
+                If Regex.IsMatch(buffer, pattern, RegexOptions.IgnoreCase) Then
+                    DyeWord(buffer.ToUpper.Replace("_"c, " "c), keywordBrush, True)
                 Else
-                    Write(buffer & c)
+                    Write(buffer)
                 End If
+
+                'Buffer reset
                 buffer = ""
-            Else
-                buffer &= c
+
+            ElseIf (c = "'"c) Then
+
+                'If a single quote is found a flag is raised to ignore the rest of the conditionals so everything within the quotes falls here
+                bufferingString = True
+
+                'When a buffer with a text enclosed in single quotes (full string) is found then it's written in green
+                If (Regex.IsMatch(buffer, "^'.+'$")) Then
+
+                    DyeWord(buffer, stringBrush, False)
+
+                    'Buffer and flag reset
+                    bufferingString = False
+                    buffer = ""
+
+                End If
+
+            ElseIf (c = "("c AndAlso Not bufferingString) Then
+
+                'The word preceding a parenthesis is always a keyword, so it's written with keyword color
+                buffer = buffer.Substring(0, buffer.Length - 1)
+                DyeWord(buffer.ToUpper, keywordBrush, True)
+                DyeWord("(", operatorBrush, True)
+                buffer = ""
+
+            ElseIf (Regex.IsMatch(buffer, "^.*\)$") AndAlso Not bufferingString) Then
+
+                'Text preceding the closing parenthesis is dyed
+                buffer = buffer.Substring(0, buffer.Length - 1)
+
+                'Check in case it is a keyword
+                If Regex.IsMatch(buffer, pattern, RegexOptions.IgnoreCase) Then
+                    DyeWord(buffer.ToUpper, keywordBrush, True)
+                Else
+                    Write(buffer)
+                End If
+
+                'Dye closing parenthesis and buffer reset
+                DyeWord(")", operatorBrush, True)
+                buffer = ""
+
+            ElseIf (IsOperator(c) AndAlso Not bufferingString) Then
+
+                'Paint the text preceding the operator
+                Dim text As String = buffer.Substring(0, buffer.Length - 1).Trim
+                Write(text)
+
+                'Add a space before the operator if it doesn't exist (for beautifying purposes)
+                'Also checks if it's a double char operator (e.g. >=, <>, etc...)
+                If (lastChar <> " "c AndAlso Not IsOperator(lastChar)) Then
+                    Write(" ")
+                End If
+
+                'Dye the operator
+                Dim operatorChar As String = buffer.Substring(buffer.Length - 1)
+                DyeWord(operatorChar, operatorBrush, True)
+
+                'Buffer reset
+                buffer = ""
+
+            ElseIf (IsOperator(lastChar) AndAlso Not IsOperator(c) AndAlso c <> " "c) Then
+                'Beutifying space after an operator if it doesn't exist
+                Write(" ")
             End If
+
+            lastChar = c
+
         Next
 
     End Sub
+
+    Private Function IsOperator(input As String) As Boolean
+        Return Regex.IsMatch(input, "^<|>|=|\+|\-|\*|%$")
+    End Function
 
     ''' <summary>
     ''' Concatenates a word to the processed text in a specified color and with bold style, if stated
@@ -176,7 +270,7 @@ Class MainWindow
         For Each word As String In words
             Dim pattern As String = "(\s|\n)" & word & "(\s|\n)"
             Dim replacement As String = vbCrLf & word & " "
-            processedText = Regex.Replace(processedText, pattern, replacement)
+            processedText = Regex.Replace(processedText, pattern, replacement, RegexOptions.IgnoreCase)
         Next
     End Sub
 
